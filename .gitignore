@@ -1,0 +1,12 @@
+# 第三方版权内容，勿提交、勿公开分发
+# backup/   = Playdek 的游戏原始资源
+# ZH_sub.ttf = 苹果冬青黑体的子集，用 make_font.py 重新生成
+backup/
+ZH_sub.ttf
+
+# 中间产物
+build/
+.font_full.tmp.ttf
+
+__pycache__/
+.DS_Store
