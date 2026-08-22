@@ -90,7 +90,15 @@ python3 verify.py && python3 patch.py
 
 ## 已知限制
 
-- **规则书和教程仍是英文**（`TS_RulesTutorial`，19.5 万字符，未在本次范围内）
+- **顶部提示条仍是英文**，如 `Place 7 Influence`、`Waiting for Opponent to decide...`、
+  `2 OPS: Roll 1-3`、`Select a Region`。这些不在任何资源表里，而是硬编码成
+  IL2CPP 字面量存在 `il2cpp_data/Metadata/global-metadata.dat`。
+  该文件的字面量数据区（偏移 113768，长 408692）紧邻下一分区，中间没有空隙，
+  只能在原字节长度内原地替换，改坏了游戏直接无法启动——风险与收益不成正比，故放弃。
+- **游戏内 HUD 部分英文**：`PLAYER HAND`、`DISCARD`、`REMOVED`、`Game Log`、
+  `NEXT PROJECT:` 等写死在 `level2` 场景里。技术上可用现有机制翻译，只是尚未做。
+- **规则书和教程仍是英文**（`TS_RulesTutorial` 19.5 万字符，以及 `level2` 里的
+  内置规则帮助页，均未在本次范围内）
 - **联机对战未验证**。单机确认正常；改过文件是否影响联机校验不清楚，建议只在单机用
 - 逗号句号的垂直位置偏居中，是冬青黑体的风格，换思源黑体可改善
 - `Game Center`、`Playdek`、`Android` 等专有名词按惯例保留英文
