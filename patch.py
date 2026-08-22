@@ -6,11 +6,12 @@
   1. 把 Font(846) 的内嵌 TTF 换成中文字体
   2. 在 TMP Settings 里挂上全局回退字体，使所有字体资产都能显示汉字
   3. 按 translations.json 替换 resources.assets 里的字符串表词条
-  4. 按 countries.json 替换 level2/level3 场景里的地图国名标签
+  4. 按 countries.json + scene_ui.json 替换 level2/level3 场景里的
+     地图国名与 HUD 文本
   5. 装回游戏目录并用原权限重新 ad-hoc 签名
 
-地图标签的安全边界：只改 m_Script 指向 TextMeshProUGUI 的组件，
-且国名必须正好落在 m_text 字段偏移上。存内部标识的组件（另一个脚本，
+场景改动的安全边界：只改 m_Script 指向 TextMeshProUGUI 的组件，
+且原文必须正好落在 m_text 字段偏移上。存内部标识的组件（另一个脚本，
 国名在偏移 148）绝不触碰——改了会破坏卡牌效果的国家查找。
 
 用法:  python3 patch.py [--dry-run] [--skip-scenes]
@@ -23,6 +24,7 @@ BACKUP_DIR = os.path.join(ROOT, "backup")
 FONT = os.path.join(ROOT, "ZH_sub.ttf")
 TRANS = os.path.join(ROOT, "translations.json")
 COUNTRIES = os.path.join(ROOT, "countries.json")
+SCENE_UI = os.path.join(ROOT, "scene_ui.json")
 BUILD = os.path.join(ROOT, "build")
 APP = os.path.join(HOME, "Library/Application Support/Steam/steamapps/common",
                    "Twilight Struggle", "TwilightStruggle.app")
@@ -131,11 +133,11 @@ def patch_resources(UnityPy, trans):
     return env
 
 
-# ---------------------------------------------------------------- 地图标签
+# ---------------------------------------------------------------- 场景文本
 
-def patch_scene(UnityPy, fname, countries):
+def patch_scene(UnityPy, fname, mapping):
     env = UnityPy.load(os.path.join(BACKUP_DIR, fname))
-    # 自动探测 TextMeshProUGUI 的脚本 PPtr：国名恰好落在 m_text 偏移上的组件
+    # 自动探测 TextMeshProUGUI 的脚本 PPtr：原文恰好落在 m_text 偏移上的组件
     from collections import Counter
     votes = Counter()
     for o in env.objects:
@@ -145,10 +147,10 @@ def patch_scene(UnityPy, fname, countries):
         if len(raw) < MTEXT_OFF + 8:
             continue
         s, _ = read_str(raw, MTEXT_OFF)
-        if s in countries:
+        if s in mapping:
             votes[struct.unpack("<iq", raw[16:28])] += 1
     if not votes:
-        print(f"[4] {fname}: 未找到地图标签，跳过")
+        print(f"[4] {fname}: 未找到可替换文本，跳过")
         return None, 0
     script, n = votes.most_common(1)[0]
     if len(votes) > 1:
@@ -164,10 +166,10 @@ def patch_scene(UnityPy, fname, countries):
         if struct.unpack("<iq", raw[16:28]) != script:
             continue
         s, _ = read_str(raw, MTEXT_OFF)
-        if s in countries:
-            o.set_raw_data(write_str(raw, MTEXT_OFF, countries[s]))
+        if s in mapping:
+            o.set_raw_data(write_str(raw, MTEXT_OFF, mapping[s]))
             changed += 1
-    print(f"[4] {fname}: 地图标签替换 {changed} 处 (脚本 {script})")
+    print(f"[4] {fname}: 场景文本替换 {changed} 处 (脚本 {script})")
     return env, changed
 
 
@@ -182,14 +184,17 @@ def main():
     import UnityPy
     trans = {k: v for k, v in json.load(open(TRANS)).items() if not k.startswith("_")}
     gloss = json.load(open(COUNTRIES))
-    # 地图上按显示文本替换：先用语义表兜底，再让 map_labels 覆盖缩写/区域名
-    countries = dict(gloss["countries"])
-    countries.update(gloss["map_labels"])
+    # 场景内按显示文本替换：语义表兜底 -> map_labels 覆盖缩写/区域名 -> HUD 文本
+    scene_map = dict(gloss["countries"])
+    scene_map.update(gloss["map_labels"])
+    if os.path.exists(SCENE_UI):
+        scene_map.update({k: v for k, v in json.load(open(SCENE_UI)).items()
+                          if not k.startswith("_")})
 
     envs = {"resources.assets": patch_resources(UnityPy, trans)}
     if not SKIP_SCENES:
         for s in SCENES:
-            env, n = patch_scene(UnityPy, s, countries)
+            env, n = patch_scene(UnityPy, s, scene_map)
             if env is not None and n:
                 envs[s] = env
 

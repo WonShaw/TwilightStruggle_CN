@@ -6,7 +6,7 @@
 > 风险自负；`restore.sh` 可随时还原。
 
 针对 Playdek 的《Twilight Struggle》Steam macOS 版（Unity 6000.0.58f2，IL2CPP）。
-覆盖 845 条游戏文本 + 211 处地图标签。规则书与教程未翻译。
+覆盖 895 条字符串表词条 + 645 处场景文本（地图国名与 HUD）。规则书与教程未翻译。
 
 ## 日常使用
 
@@ -47,8 +47,9 @@ python3 verify.py && python3 patch.py
 | `restore.sh` | 一键还原英文原版 |
 | `verify.py` | 译文标记校验 |
 | `merge.py` | 分批合并译文；`--status` 看进度 |
-| `translations.json` | 845 条译文 |
+| `translations.json` | 895 条译文 |
 | `countries.json` | 国名与地图标签对照表 |
+| `scene_ui.json` | `level2`/`level3` 场景里写死的 HUD 文本对照表 |
 | `source_texts.json` | 英文原文，供对照 |
 | `GLOSSARY.md` | 术语规范 |
 | `make_font.py` | 生成 `ZH_sub.ttf`；`--source` 可换其他字体 |
@@ -83,7 +84,8 @@ python3 verify.py && python3 patch.py
 这样任何字体渲染到汉字时都会回退到这里现场生成字形，不必逐个替换十几个字体图集。
 斜体、`<br>` 断行、CJK 标点避头尾都能正常工作。
 
-地图国名在 `level2`/`level3` 场景里是 TextMeshProUGUI 组件的 `m_text`。
+地图国名与 HUD 文字（`Player Hand`、`Next Project:` 等）在 `level2`/`level3`
+场景里是 TextMeshProUGUI 组件的 `m_text`，不走字符串表。
 **只改 `m_Script` 指向 TMP 文本组件的对象**（脚本 PPtr `(1, 1417)`，国名在偏移 92）；
 另有一组脚本 `(1, 563)` 的组件同样存着国名（偏移 148），那是内部标识，
 改了会破坏卡牌效果的国家查找——绝不能碰。
@@ -95,8 +97,6 @@ python3 verify.py && python3 patch.py
   IL2CPP 字面量存在 `il2cpp_data/Metadata/global-metadata.dat`。
   该文件的字面量数据区（偏移 113768，长 408692）紧邻下一分区，中间没有空隙，
   只能在原字节长度内原地替换，改坏了游戏直接无法启动——风险与收益不成正比，故放弃。
-- **游戏内 HUD 部分英文**：`PLAYER HAND`、`DISCARD`、`REMOVED`、`Game Log`、
-  `NEXT PROJECT:` 等写死在 `level2` 场景里。技术上可用现有机制翻译，只是尚未做。
 - **规则书和教程仍是英文**（`TS_RulesTutorial` 19.5 万字符，以及 `level2` 里的
   内置规则帮助页，均未在本次范围内）
 - **联机对战未验证**。单机确认正常；改过文件是否影响联机校验不清楚，建议只在单机用
