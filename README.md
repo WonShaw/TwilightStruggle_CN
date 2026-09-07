@@ -74,6 +74,7 @@ python3 verify.py && python3 patch.py
 | `make_font.py` | 生成 `ZH_sub.ttf`；`--source` 可换其他字体 |
 | `ZH_sub.ttf` | 中文字体（冬青黑体简体中文子集，2.1 万字，8.2 MB） |
 | `backup/` | 原始文件备份 + `MANIFEST.json` 校验哈希，**不要删**，见下 |
+| `savetool/` | 存档工具，与汉化无关，见文末 |
 
 ## 关于 backup/ 和 ZH_sub.ttf
 
@@ -133,6 +134,47 @@ python3 verify.py && python3 patch.py
 
 译文的键（`Card_004Text` 之类）很稳定，一般能跨版本沿用；
 地图与 HUD 按原文精确匹配，改了措辞的条目会退回英文，不会出错。
+
+## 附：存档悔棋工具
+
+`savetool/` 和汉化没关系，是顺手做的，放这儿免得丢。
+
+存档在 `~/Library/Application Support/unity.Playdek.TwilightStruggle/`，
+一局占两个文件：`Save1Full.dat` 是局面，`Save1Short.dat` 是读档列表用的摘要
+（.NET BinaryFormatter 序列化，字段名就写在流里）。
+
+关键点是 **`Save1Full.dat` 里没有棋盘状态**——5 KB 装不下 86 个国家的影响力、
+手牌和弃牌堆。它是 224 字节头 + N 条 16 字节操作记录，游戏靠**重放**这些记录
+还原局面。所以悔棋 = 砍掉末尾记录 + 同步计数器：
+
+```bash
+python3 savetool/undo_move.py            # 列出所有手，只读
+python3 savetool/undo_move.py --undo 1   # 悔一手
+python3 savetool/undo_move.py --restore  # 从 .bak 还原
+```
+
+必须**整手删**。一手是从「打出一张牌」（动作码 `0xa01X`）起，到下一次出牌为止，
+中间是选用途和逐个作用到国家。只删末尾一条会留下「牌打出去了但没落子」的残缺
+状态，重放到那里就卡住。
+
+要改的地方一共三处，少一处游戏就读不出来：
+
+| 位置 | 内容 |
+|---|---|
+| `Save1Full.dat` 尾部 | 截掉整手的记录 |
+| 头部 `0xB8` / `0xC8` / `0xD4` | 三处记录数，必须一起改 |
+| `Save1Short.dat` 的 `savedDataSize` | 与 Full 的新大小对上 |
+
+头部 `0xB0` 那个值验过不是 CRC32/Adler32/sum/xor 里的任何一种，是随机数种子
+（骰子要能跟着日志一起重放），不用动；`0xCC`/`0xD0` 的两个 `-1` 也原样保留。
+
+工具默认只读，写之前会检查：游戏没在运行（**游戏退出时会把内存里的局面写回存档，
+边玩边改等于白改**）、三处计数器彼此一致且与文件长度相符、`savedDataSize` 对得上。
+任一不符直接中止，不做部分修改。`savedDataSize` 的偏移若因游戏更新而位移，
+会全文搜该值，唯一命中才用，有歧义则报错。
+
+`savetool/nrbf.py` 是配套的 BinaryFormatter 解析器，用来读摘要和
+`OfflineProfiles.dat`（战绩），字段位移后靠它重新对偏移。
 
 ## 已知限制
 
