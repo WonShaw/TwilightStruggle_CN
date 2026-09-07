@@ -6,7 +6,8 @@
 > 风险自负；`restore.sh` 可随时还原。
 
 针对 Playdek 的《Twilight Struggle》Steam macOS 版（Unity 6000.0.58f2，IL2CPP）。
-覆盖 895 条字符串表词条 + 645 处场景文本（地图国名与 HUD）。规则书与教程未翻译。
+覆盖 1208 条字符串表词条 + 688 处场景文本（地图国名与 HUD）。
+卡牌、界面、规则书与游戏内帮助页均已汉化。
 
 ## 日常使用
 
@@ -65,7 +66,7 @@ python3 verify.py && python3 patch.py
 | `rebuild_backup.py` | 游戏更新后重新采集 `backup/` |
 | `verify.py` | 译文标记校验 |
 | `merge.py` | 分批合并译文；`--status` 看进度 |
-| `translations.json` | 895 条译文 |
+| `translations.json` | 1208 条译文 |
 | `countries.json` | 国名与地图标签对照表 |
 | `scene_ui.json` | `level2`/`level3` 场景里写死的 HUD 文本对照表 |
 | `source_texts.json` | 英文原文，供对照 |
@@ -108,6 +109,18 @@ python3 verify.py && python3 patch.py
 另有一组脚本 `(1, 563)` 的组件同样存着国名（偏移 148），那是内部标识，
 改了会破坏卡牌效果的国家查找——绝不能碰。
 
+### 规则书与帮助页为什么只翻表就够
+
+`level2` 场景里也躺着一整份规则书和帮助页的英文原文，看上去像是要逐条替换场景文本，
+其实不必：这些文本对象旁边还挂着一个本地化组件（脚本 PPtr `(1, 890)`），
+值形如 `${Help_Coup_Purpose}`，运行时按这个键去 `TS_RulesTutorial` 表取译文覆盖显示。
+`level2` 里共 636 处这样的绑定，其中 239 处指向 `TS_RulesTutorial`。
+所以场景里那份英文只是设计期的占位内容，**翻表即可，不用动场景**。
+
+反过来，少数文本对象没挂本地化组件，会原样显示场景里的文字，
+这部分才需要写进 `scene_ui.json`。要重新核对哪些是漏网的，可以按
+「有 `(1, 1417)` 组件、同一 GameObject 上没有 `(1, 890)` 组件」筛一遍。
+
 ## 游戏更新后会怎样
 
 三类失效，严重程度不同，脚本对前两类都会**报错中止**而不是静默出错：
@@ -128,8 +141,9 @@ python3 verify.py && python3 patch.py
   IL2CPP 字面量存在 `il2cpp_data/Metadata/global-metadata.dat`。
   该文件的字面量数据区（偏移 113768，长 408692）紧邻下一分区，中间没有空隙，
   只能在原字节长度内原地替换，改坏了游戏直接无法启动——风险与收益不成正比，故放弃。
-- **规则书和教程仍是英文**（`TS_RulesTutorial` 19.5 万字符，以及 `level2` 里的
-  内置规则帮助页，均未在本次范围内）
+- `level2` 里还剩约 30 条英文，都是设计期占位内容（`PlayerName12345`、`Text goes here`、
+  `Turn ##`、`Military Coup in Phillipines` 之类）和孤立单词（`Before`/`After`/`War`/
+  `Country`/`Early`）。前者游戏里不会显示，后者上下文不明、全局替换有误伤风险，故未翻
 - **联机对战未验证**。单机确认正常；改过文件是否影响联机校验不清楚，建议只在单机用
 - 逗号句号的垂直位置偏居中，是冬青黑体的风格，换思源黑体可改善
 - `Game Center`、`Playdek`、`Android` 等专有名词按惯例保留英文

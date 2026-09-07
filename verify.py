@@ -6,7 +6,9 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 trans = json.load(open(os.path.join(ROOT, "translations.json")))
 src = json.load(open(os.path.join(ROOT, "source_texts.json")))
 
-TAG = re.compile(r"</?(?:br|i|b|u|nobr|font|color|cspace|size|align)\b[^>]*>", re.I)
+TAG = re.compile(r"</?(?:br|i|b|u|nobr|font|color|cspace|size|align|indent"
+                 r"|margin|margin-right|margin-left|allcaps|sprite|pos|space"
+                 r"|line-height|mspace|width|voffset|s|sub|sup)\b[^>]*>", re.I)
 PLACE = re.compile(r"\{\d+\}|%[ds]%?%?")
 
 errors, warns = [], []
