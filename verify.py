@@ -11,7 +11,12 @@ TAG = re.compile(r"</?(?:br|i|b|u|nobr|font|color|cspace|size|align|indent"
                  r"|line-height|mspace|width|voffset|s|sub|sup)\b[^>]*>", re.I)
 PLACE = re.compile(r"\{\d+\}|%[ds]%?%?")
 
-errors, warns = [], []
+# 有意与原文不一致的条目：键 -> 原因。跳过标记比对，但会在报告里列出来。
+EXCEPTIONS = {
+    "TS_Cards/Card_029Title": "中文「东欧剧变」四字放得下，去掉原文的 <br>，交给 TMP 自动折行",
+}
+
+errors, warns, notes = [], [], []
 for table, rows in src.items():
     for key, en in rows.items():
         zh = trans.get(table, {}).get(key)
@@ -23,7 +28,11 @@ for table, rows in src.items():
             return sorted(m.group(0).split("=")[0].rstrip(">").lower() + ">"
                           for m in TAG.finditer(s))
         if norm(en) != norm(zh):
-            errors.append(f"{table}/{key}: 标记不一致\n    原: {norm(en)}\n    译: {norm(zh)}")
+            ex = EXCEPTIONS.get(f"{table}/{key}")
+            if ex:
+                notes.append(f"{table}/{key}: 标记有意不一致 — {ex}")
+            else:
+                errors.append(f"{table}/{key}: 标记不一致\n    原: {norm(en)}\n    译: {norm(zh)}")
         # 占位符必须原样保留
         if sorted(PLACE.findall(en)) != sorted(PLACE.findall(zh)):
             errors.append(f"{table}/{key}: 占位符不一致 {PLACE.findall(en)} -> {PLACE.findall(zh)}")
@@ -36,7 +45,10 @@ for table, rows in src.items():
 
 for e in errors:
     print("错误 " + e)
+for n in notes:
+    print("例外 " + n)
 for w in warns:
     print("提示 " + w)
-print(f"\n共 {sum(len(r) for r in src.values())} 条；错误 {len(errors)}，提示 {len(warns)}")
+print(f"\n共 {sum(len(r) for r in src.values())} 条；"
+      f"错误 {len(errors)}，例外 {len(notes)}，提示 {len(warns)}")
 sys.exit(1 if errors else 0)
