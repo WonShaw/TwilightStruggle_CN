@@ -13,6 +13,9 @@ Font(846) 对象，作为 TMP 全局回退字体的来源。
 """
 import argparse, os, sys
 
+# fontTools 写 head.modified 时优先用这个变量；固定它，输出才逐字节可重现
+os.environ.setdefault("SOURCE_DATE_EPOCH", "0")
+
 ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(ROOT, "ZH_sub.ttf")
 DEFAULT_SRC = "/System/Library/Fonts/Hiragino Sans GB.ttc"

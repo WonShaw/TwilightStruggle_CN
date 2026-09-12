@@ -5,16 +5,15 @@
 否则采集到的会是汉化版——那样 restore.sh 再也还原不回英文，而且补丁会在
 已翻译的文件上再翻一遍。本脚本会主动检查这一点。
 
-用法:  python3 rebuild_backup.py
+用法:  python3 rebuild_backup.py [--game-path <TwilightStruggle.app>]
 """
 import hashlib, json, os, shutil, sys
+from gamepath import find_app
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 BACKUP_DIR = os.path.join(ROOT, "backup")
 MANIFEST = os.path.join(BACKUP_DIR, "MANIFEST.json")
-HOME = os.path.expanduser("~")
-APP = os.path.join(HOME, "Library/Application Support/Steam/steamapps/common",
-                   "Twilight Struggle", "TwilightStruggle.app")
+APP = find_app()          # 从 Steam 库清单定位；--game-path / TS_GAME_PATH 可指定
 DATA = os.path.join(APP, "Contents/Resources/Data")
 
 PATCHED_FILES = ["resources.assets", "level2", "level3"]
@@ -77,10 +76,8 @@ def main():
                "patched": {}},
               open(MANIFEST, "w"), indent=1)
 
-    print("\n备份重建完成。接下来：")
-    print("  python3 patch.py --dry-run    # 先看各表命中数是否正常")
-    print("如果命中数骤降，或报「找不到对象 / 结构已变」，说明新版打包结构变了，")
-    print("需要重新探测 patch.py 顶部那几个 path ID 再打补丁。")
+    print("\n备份重建完成。接下来：  python3 patch.py")
+    print("若报「找不到对象 / 结构已变」，说明新版重新打了包，补丁需要更新。")
 
 
 if __name__ == "__main__":

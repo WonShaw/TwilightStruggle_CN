@@ -17,8 +17,8 @@
 用法:  python3 patch.py [--dry-run] [--skip-scenes]
 """
 import hashlib, json, os, shutil, struct, subprocess, sys
+from gamepath import find_app
 
-HOME = os.path.expanduser("~")
 ROOT = os.path.dirname(os.path.abspath(__file__))   # 跟随本文件所在目录，整个文件夹可随意移动
 BACKUP_DIR = os.path.join(ROOT, "backup")
 FONT = os.path.join(ROOT, "ZH_sub.ttf")
@@ -27,8 +27,7 @@ COUNTRIES = os.path.join(ROOT, "countries.json")
 SCENE_UI = os.path.join(ROOT, "scene_ui.json")
 BUILD = os.path.join(ROOT, "build")
 MANIFEST = os.path.join(BACKUP_DIR, "MANIFEST.json")
-APP = os.path.join(HOME, "Library/Application Support/Steam/steamapps/common",
-                   "Twilight Struggle", "TwilightStruggle.app")
+APP = find_app()          # 从 Steam 库清单定位；--game-path / TS_GAME_PATH 可指定
 DATA = os.path.join(APP, "Contents/Resources/Data")
 
 FONT_PID = 846            # Font 对象 "LiberationSans"，回退字体资产的来源字体
