@@ -26,8 +26,13 @@
   主程序和 AI 插件都是 universal，但 `libsteam_api.dylib` 只有 x86_64，所以整个进程跑在
   Rosetta 下。`open -a` 会选 arm64 → `DllNotFoundException` 立即退出；
   必须 `open "steam://rungameid/406290"`。
-- Python：本机是 miniconda base（3.13），`UnityPy` / `fonttools` 用 pip 装在里面。
-  `verify.py` / `merge.py` / `gamepath.py` / `savetool/` 只用标准库。
+- Python：本机用独立 conda 环境 **`ts-cn`**（Python 3.13），依赖按 `requirements.txt`
+  用 pip 装在里面；**base 里不装本项目的任何包**。运行方式：
+  `/Users/xiaowan/miniconda3/envs/ts-cn/bin/python patch.py`，或先 `conda activate ts-cn`。
+  重建环境：`conda create -n ts-cn python=3.13 && conda run -n ts-cn pip install -r requirements.txt`。
+  只有 `patch.py` / `rebuild_backup.py`（UnityPy）和 `make_font.py`（fonttools）需要这个环境；
+  `verify.py` / `merge.py` / `gamepath.py` / `savetool/` 只用标准库，任何 Python 3 都能跑，
+  `restore.sh` 里调 `gamepath.py` 用的就是 PATH 上的 `python3`。
 - 游戏路径：`gamepath.find_app()` 解析 `steamapps/libraryfolders.vdf`，按 app id 406290 找库，
   目录名读 `appmanifest_406290.acf` 的 `installdir`。`--game-path` / `TS_GAME_PATH` 覆盖。
 
